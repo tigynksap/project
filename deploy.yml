@@ -1,0 +1,59 @@
+---
+- name: Ensure that the ansible user exists on all servers with key based access
+  hosts:
+    - servers
+    - localhost
+  remote_user: vagrant
+  vars:
+    ansible_password: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      61366630336261313163393466353631666536643730333663383730613861326132386534343065
+      3631616137386635336564633861326130376139336238330a663334336164613162393861666566
+      38303035323037633438323139373439363965303931663166383361393539393066643565646661
+      6662343737643530620a643765356161363661383433366561316266336135656439396631343239
+      3632
+    password: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      30656235356236653130343064386461393332653464396132643638376432383432323062313733
+      3534343338373330326563626439363332343565393465620a643034663464336563313730323430
+      63326135636536373661653538326431643139643139313938343064633164613061373266646238
+      3535613066636531610a316562663064356433353531326464633665383832646230356437623063
+      39386432366261366563373563393334626630343466633965376134323862633930616161393837
+      31656437366237316361663434343539356134303065383165316237653735333135353963343063
+      31326231303661336562636630613236656236363966393663336436306364663130333030396338
+      61353230663437643438396463663132343935653136356535353964633434373533666363656565
+      38353932333566313262653065383065396431643630363163393133303964333463
+  become: true
+  tasks:
+    - name: Create the ansible user on the managed hosts
+      user: &createuser
+        name: ansible
+        state: present
+        create_home: true
+      when: '"servers" in group_names'
+    
+    - block:
+      - name: Create the ansible user on the local machine
+        user:
+          <<: *createuser
+          password: "{{ password }}"
+          generate_ssh_key: true
+ 
+      - name: Read in the ssh key from the local machine's ansible user
+        shell: /bin/cat /home/ansible/.ssh/id_rsa.pub
+        become_user: ansible
+        register: ssh_key
+      when: inventory_hostname == 'localhost'
+        
+    - name: Create the file in sudoers.d for the ansible user
+      copy:
+        content: "ansible ALL=(ALL) NOPASSWD: ALL"
+        dest: /etc/sudoers.d/ansible
+
+      
+    - name: Copy over the ssh public key for key based access
+      authorized_key:
+          user: ansible
+          key: "{{ hostvars['localhost']['ssh_key']['stdout'] }}"
+          state: present
+
