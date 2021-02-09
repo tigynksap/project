@@ -1,0 +1,16 @@
+---
+- name: Unsafe strings demo
+  hosts: localhost
+  vars_prompt:
+     - name: unsafe_string
+       prompt: Provide some data
+       private: False
+       unsafe: True
+  tasks:
+     - name: Create a file containing the user input
+       copy:
+          content: "{{ unsafe_string }}"
+          dest: /tmp/demofile
+     - name: Print the user input to the console
+       debug:
+         msg: "{{ unsafe_string }}"

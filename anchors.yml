@@ -1,0 +1,49 @@
+---
+- name: Experiment with anchors and aliases
+  hosts:
+    - localhost
+  vars:
+    fruits: &types
+      citrus:
+        - orange
+        - grapefruit
+        - lime
+      berries:
+        - strawberry
+        - raspberry
+        - blackberry
+        - blueberry
+      melons:
+        - watermelon
+        - rockmelon
+        - honeydew
+  tasks:
+    - name: Print out the list of fruits
+      debug:
+        var: fruits
+      vars:
+        fruits:
+           <<: *types
+           stone_fruits:
+              - nectarine
+              - apricot
+              - peach
+- name: Demonstrate the ability of an alias used with an anchor in an earlier play
+  hosts:
+     - localhost
+  vars:
+     fruits:
+        <<: *types
+  tasks:
+     - name: Print out the list of fruits
+       debug:
+          var: fruits
+       vars:
+          fruits:
+            <<: *types
+            stone_fruits:
+                 - nectarine
+                 - apricot
+                 - peach
+            melons:
+                 - rockmelon
